@@ -31,24 +31,35 @@ Included in the IPython notebook called `Rover_Project_Test_Notebook.ipynb` are 
 jupyter notebook
 ```
 
-This command will bring up a browser window in the current directory where you can navigate to wherever `Rover_Project_Test_Notebook.ipynb` is and select it.  Run the cells in the notebook from top to bottom to see the various data analysis steps.  
+#### Calibration 
+To perform the appropriate transformations we need to use initial calibration images. One uses a grid to measure distance, the other is an example of a rock that the Rover is looking for.
+![Calibration Image](output/calibration.png)
 
-The last two cells in the notebook are for running the analysis on a folder of test images to create a map of the simulator environment and write the output to a video.  These cells should run as-is and save a video called `test_mapping.mp4` to the `output` folder.  This should give you an idea of how to go about modifying the `process_image()` function to perform mapping on your data.  
+The rocks appear to have an approximate RGB value of (110, 110, 50) and that is used to threshold the images to identify rocks.
+
+![Rock threshold](output/rock_threshold.png)
+
+#### Perspective Transformation
+It's important to transform the Rover image to world-view coordinates in order to identify obstacles and determine the best path forward.  This is done by applying a rotation and transformation using the `pix_to_world()` function.
+The unnavigable areas are identified by thresholding anything above the RGB value of (160,160,160).
+
+![Perspective transform](output/perspective_transform.png)
+
+Once the navigable terrain identified, we can identify the best path by taking the average angle of the origin to all the navigable pixels.
+
+![Calculate next direction](output/calculate_next_direction.png)
+
 
 ## Navigating Autonomously
-The file called `drive_rover.py` is what you will use to navigate the environment in autonomous mode.  This script calls functions from within `perception.py` and `decision.py`.  The functions defined in the IPython notebook are all included in`perception.py` and it's your job to fill in the function called `perception_step()` with the appropriate processing steps and update the rover map. `decision.py` includes another function called `decision_step()`, which includes an example of a conditional statement you could use to navigate autonomously.  Here you should implement other conditionals to make driving decisions based on the rover's state and the results of the `perception_step()` analysis.
+The `decision.py` file was altered to help better navigate the rover.  A function `get_steer_angle` was created to improve the method for calculating the next steering angle.
+It uses a weighted average of angles to navigable pixels, weighted by 1/sqrt(Rover.nav_dists)) so closer pixels are weighted more highly.
 
-`drive_rover.py` should work as is if you have all the required Python packages installed. Call it at the command line like this: 
+Also, two new Rover modes were created called 'Collecting' and 'Stuck'.  'Collecting' mode starts whenever a rock is in view, and it navigates towards the rock and picks it up.  
+The 'Stuck' mode starts when the Rover is in 'forward' mode for > 4 seconds but has a Rover speed < 0.01 m/s.  While in 'Stuck' mode the Rover reverses steering direction throttle direction.
 
-```sh
-python drive_rover.py
-```  
+The Rover is able to find and retrieve all 6 objects, it can map >90% of the map with >70% fidelity.
+The results were obtained with a resolution of 1024x768 with the Fantastic video quality.
 
-Then launch the simulator and choose "Autonomous Mode".  The rover should drive itself now!  It doesn't drive that well yet, but it's your job to make it better!  
-
-**Note: running the simulator with different choices of resolution and graphics quality may produce different results!  Make a note of your simulator settings in your writeup when you submit the project.**
-
-### Project Walkthrough
-If you're struggling to get started on this project, or just want some help getting your code up to the minimum standards for a passing submission, we've recorded a walkthrough of the basic implementation for you but **spoiler alert: this [Project Walkthrough Video](https://www.youtube.com/watch?v=oJA6QHDPdQw) contains a basic solution to the project!**.
-
-
+### Ideas for improvement
+There are certain rocks that the Rover is likely to get stuck in, where the 'Stuck' mode is incapable of getting the Rover unstuck.  Identifying these problem rocks and avoiding them would help.  
+Moreover, certain areas of the map can remain unexplored.  It would be helpful to give more weight to unexplored pixels when updating the steering angle.
